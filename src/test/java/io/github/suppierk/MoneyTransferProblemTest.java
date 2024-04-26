@@ -1,4 +1,4 @@
-package io.gthub.suppierk;
+package io.github.suppierk;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
