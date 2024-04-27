@@ -169,28 +169,7 @@ class MoneyTransferProblemTest {
                     .mapToObj(
                         value ->
                             new MoneyTransferProblem.ReentrantLockedAccount(
-                                value,
-                                ThreadLocalRandom.current().nextInt(0, BALANCE_UPPER_BOUND),
-                                false))
-                    .toList()),
-            Named.of(
-                "transfer must pass tests",
-                (TrieFunction<
-                        MoneyTransferProblem.ReentrantLockedAccount,
-                        MoneyTransferProblem.ReentrantLockedAccount,
-                        Integer,
-                        Boolean>)
-                    MoneyTransferProblem::lockedTransfer)),
-        Arguments.of(
-            Named.of(
-                "For ReentrantLock locked accounts with fair sync policy",
-                IntStream.range(0, NUMBER_OF_ACCOUNTS)
-                    .mapToObj(
-                        value ->
-                            new MoneyTransferProblem.ReentrantLockedAccount(
-                                value,
-                                ThreadLocalRandom.current().nextInt(0, BALANCE_UPPER_BOUND),
-                                true))
+                                value, ThreadLocalRandom.current().nextInt(0, BALANCE_UPPER_BOUND)))
                     .toList()),
             Named.of(
                 "transfer must pass tests",
@@ -207,28 +186,7 @@ class MoneyTransferProblemTest {
                     .mapToObj(
                         value ->
                             new MoneyTransferProblem.ReadWriteLockedAccount(
-                                value,
-                                ThreadLocalRandom.current().nextInt(0, BALANCE_UPPER_BOUND),
-                                false))
-                    .toList()),
-            Named.of(
-                "transfer must pass tests",
-                (TrieFunction<
-                        MoneyTransferProblem.ReadWriteLockedAccount,
-                        MoneyTransferProblem.ReadWriteLockedAccount,
-                        Integer,
-                        Boolean>)
-                    MoneyTransferProblem::lockedTransfer)),
-        Arguments.of(
-            Named.of(
-                "For ReentrantReadWriteLock locked accounts with fair sync policy",
-                IntStream.range(0, NUMBER_OF_ACCOUNTS)
-                    .mapToObj(
-                        value ->
-                            new MoneyTransferProblem.ReadWriteLockedAccount(
-                                value,
-                                ThreadLocalRandom.current().nextInt(0, BALANCE_UPPER_BOUND),
-                                true))
+                                value, ThreadLocalRandom.current().nextInt(0, BALANCE_UPPER_BOUND)))
                     .toList()),
             Named.of(
                 "transfer must pass tests",

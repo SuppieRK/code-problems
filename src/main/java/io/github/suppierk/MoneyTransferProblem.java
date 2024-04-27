@@ -105,9 +105,9 @@ public final class MoneyTransferProblem {
     private final ReentrantLock lock;
     private int balance;
 
-    public ReentrantLockedAccount(int id, int initialBalance, boolean fair) {
+    public ReentrantLockedAccount(int id, int initialBalance) {
       super(id);
-      this.lock = new ReentrantLock(fair);
+      this.lock = new ReentrantLock();
       this.balance = initialBalance;
     }
 
@@ -153,9 +153,9 @@ public final class MoneyTransferProblem {
     private final ReentrantReadWriteLock rwLock;
     private int balance;
 
-    public ReadWriteLockedAccount(int id, int initialBalance, boolean fair) {
+    public ReadWriteLockedAccount(int id, int initialBalance) {
       super(id);
-      this.rwLock = new ReentrantReadWriteLock(fair);
+      this.rwLock = new ReentrantReadWriteLock();
       this.balance = initialBalance;
     }
 
