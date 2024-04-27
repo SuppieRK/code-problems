@@ -2,6 +2,7 @@ package io.github.suppierk;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -50,6 +51,20 @@ public final class MoneyTransferProblem {
   }
 
   /**
+   * Implementations of this interface should provide the necessary mechanisms for locking and
+   * unlocking the account.
+   */
+  public abstract static class LockedAccount extends AbstractAccount {
+    protected LockedAccount(int id) {
+      super(id);
+    }
+
+    public abstract boolean tryLock(long time, TimeUnit unit) throws InterruptedException;
+
+    public abstract void unlock();
+  }
+
+  /**
    * This class extends the AbstractAccount class and provides synchronized methods to get and set
    * the balance.
    *
@@ -81,26 +96,76 @@ public final class MoneyTransferProblem {
 
   /**
    * This class extends the AbstractAccount class and provides methods to get and set the balance
+   * supported by ReentrantLock.
+   *
+   * <p>Multiple threads accessing the balance of this class will be synchronized via lock, ensuring
+   * atomic and thread-safe operations.
+   */
+  public static class ReentrantLockedAccount extends LockedAccount {
+    private final ReentrantLock lock;
+    private int balance;
+
+    public ReentrantLockedAccount(int id, int initialBalance, boolean fair) {
+      super(id);
+      this.lock = new ReentrantLock(fair);
+      this.balance = initialBalance;
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+      return lock.tryLock(time, unit);
+    }
+
+    @Override
+    public void unlock() {
+      lock.unlock();
+    }
+
+    @Override
+    public int getBalance() {
+      lock.lock();
+      try {
+        return balance;
+      } finally {
+        lock.unlock();
+      }
+    }
+
+    @Override
+    public void setBalance(int balance) {
+      lock.lock();
+      try {
+        this.balance = balance;
+      } finally {
+        lock.unlock();
+      }
+    }
+  }
+
+  /**
+   * This class extends the AbstractAccount class and provides methods to get and set the balance
    * supported by ReentrantReadWriteLock.
    *
    * <p>Multiple threads accessing the balance of this class will be synchronized via lock, ensuring
    * atomic and thread-safe operations.
    */
-  public static class LockedAccount extends AbstractAccount {
+  public static class ReadWriteLockedAccount extends LockedAccount {
     private final ReentrantReadWriteLock rwLock;
     private int balance;
 
-    public LockedAccount(int id, int initialBalance) {
+    public ReadWriteLockedAccount(int id, int initialBalance, boolean fair) {
       super(id);
-      this.rwLock = new ReentrantReadWriteLock();
+      this.rwLock = new ReentrantReadWriteLock(fair);
       this.balance = initialBalance;
     }
 
-    public boolean tryWriteLock(long time, TimeUnit unit) throws InterruptedException {
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
       return rwLock.writeLock().tryLock(time, unit);
     }
 
-    public void writeUnlock() {
+    @Override
+    public void unlock() {
       rwLock.writeLock().unlock();
     }
 
@@ -229,13 +294,12 @@ public final class MoneyTransferProblem {
     // However, there are also several issues with this approach:
     // 1. Account class exposes more methods that we might like it to.
     // 2. Still not fail-safe in terms of locks manipulations.
-    // 3. At the time of acquisition, our invariant `from.getBalance() < amount` might be false.
     boolean firstAcquired = false;
     boolean secondAcquired = false;
     while (!firstAcquired && !secondAcquired) {
       try {
-        firstAcquired = first.tryWriteLock(1, TimeUnit.MILLISECONDS);
-        secondAcquired = second.tryWriteLock(1, TimeUnit.MILLISECONDS);
+        firstAcquired = first.tryLock(1, TimeUnit.MILLISECONDS);
+        secondAcquired = second.tryLock(1, TimeUnit.MILLISECONDS);
 
         if (firstAcquired && secondAcquired) {
           from.setBalance(from.getBalance() - amount);
@@ -247,12 +311,12 @@ public final class MoneyTransferProblem {
         throw new IllegalStateException(e);
       } finally {
         if (firstAcquired) {
-          first.writeUnlock();
+          first.unlock();
           firstAcquired = false;
         }
 
         if (secondAcquired) {
-          second.writeUnlock();
+          second.unlock();
           secondAcquired = false;
         }
       }
